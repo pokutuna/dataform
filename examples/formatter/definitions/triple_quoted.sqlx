@@ -15,4 +15,8 @@ SELECT
     "\n  abc\n  ",
     r'''
   abc
-  ''') AS multi_line_regex
+  ''') AS multi_line_regex,
+
+"""
+"inner quote"
+""" AS quote_contains

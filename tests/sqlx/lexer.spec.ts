@@ -38,5 +38,10 @@ suite("@dataform/sqlx", () => {
       ]);
       expect(actual.equals(expected)).equals(true);
     });
+
+    test('triple quote', ()=> {
+      const actual = SyntaxTreeNode.create('select """foo""" as triple_quoted')
+      console.log(actual);
+    })
   });
 });

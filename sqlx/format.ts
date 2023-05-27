@@ -153,6 +153,7 @@ function stripUnformattableText(
       const placeholderId = generatePlaceholderId();
       switch (part.type) {
         case SyntaxTreeNodeType.SQL_LITERAL_STRING:
+        case SyntaxTreeNodeType.SQL_LITERAL_MULTILINE_STRING:
         case SyntaxTreeNodeType.JAVASCRIPT_TEMPLATE_STRING_PLACEHOLDER: {
           const placeholderStr = `${placeholderId}`
           placeholders[placeholderStr] = part;
@@ -251,6 +252,9 @@ function formatSqlQueryPlaceholder(node: SyntaxTreeNode, jsIndent: string): stri
     case SyntaxTreeNodeType.SQL_LITERAL_STRING:
     case SyntaxTreeNodeType.SQL_COMMENT:
       return formatEveryLine(node.concatenate(), line => `${jsIndent}${line.trimLeft()}`);
+    case SyntaxTreeNodeType.SQL_LITERAL_MULTILINE_STRING:
+      console.log(node.concatenate());
+      return `${jsIndent}${node.concatenate().trimLeft()}`;
     default:
       throw new Error(`Unrecognized SyntaxTreeNodeType: ${node.type}`);
   }
