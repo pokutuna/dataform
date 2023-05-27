@@ -154,8 +154,9 @@ function stripUnformattableText(
       switch (part.type) {
         case SyntaxTreeNodeType.SQL_LITERAL_STRING:
         case SyntaxTreeNodeType.JAVASCRIPT_TEMPLATE_STRING_PLACEHOLDER: {
-          placeholders[placeholderId] = part;
-          return placeholderId;
+          const placeholderStr = `${placeholderId}`
+          placeholders[placeholderStr] = part;
+          return placeholderStr;
         }
         case SyntaxTreeNodeType.SQL_COMMENT: {
           // sql-formatter knows how to format comments (as long as they keep to a single line);
@@ -175,9 +176,9 @@ function stripUnformattableText(
 }
 
 function generatePlaceholderId() {
-  return uuidv4()
+  return 'P' + uuidv4()
     .replace(/-/g, "")
-    .substring(0, 16);
+    .substring(0, 15);
 }
 
 function replacePlaceholders(
@@ -200,10 +201,10 @@ function formatJavaScript(text: string) {
 }
 
 function formatSql(text: string) {
-  let formatted = sqlFormatter.format(text) as string;
+  let formatted = sqlFormatter.format(text, { language: 'bigquery' }) as string;
   // Unfortunately sql-formatter does not always produce final formatted output (even on plain SQL) in a single pass.
   for (let attempts = 0; attempts < MAX_SQL_FORMAT_ATTEMPTS; attempts++) {
-    const newFormatted = sqlFormatter.format(formatted) as string;
+    const newFormatted = sqlFormatter.format(formatted, { language: 'bigquery' }) as string;
     if (newFormatted === formatted) {
       return newFormatted;
     }
