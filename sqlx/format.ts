@@ -17,6 +17,8 @@ const JS_BEAUTIFY_OPTIONS: JsBeautifyOptions = {
 const MAX_SQL_FORMAT_ATTEMPTS = 5;
 
 export function format(text: string, fileExtension: string) {
+  console.log('--- before ---');
+  console.log(text);
   try {
     switch (fileExtension) {
       case "sqlx":
@@ -41,6 +43,10 @@ export async function formatFile(
   const originalFileContent = await promisify(fs.readFile)(filename, "utf8");
   const formattedText = format(originalFileContent, fileExtension);
   if (formattedText !== format(formattedText, fileExtension)) {
+    console.log('-- formattedText --');
+    console.log(formattedText);
+    console.log('-- re-formattedText --');
+    console.log(format(formattedText, fileExtension));
     throw new Error("Formatter unable to determine final formatted form.");
   }
 
@@ -67,19 +73,36 @@ function formatSqlx(node: SyntaxTreeNode, indent: string = "") {
     formatJavaScript(jsCodeBlock.concatenate())
   );
 
+  console.log('second');
+  // console.log(sqlxStatements)
   // Second, format all the SQLX statements, replacing any placeholders with their formatted form.
   const formattedSqlxStatements = sqlxStatements.map(sqlxStatement => {
     const placeholders: {
       [placeholderId: string]: SyntaxTreeNode | string;
     } = {};
+    console.log('--- sqlStatement ---')
+    console.log(sqlxStatement)
     const unformattedPlaceholderSql = stripUnformattableText(sqlxStatement, placeholders).join("");
+    console.log('--- unformattedPlaceholderSql ---')
+    console.log(unformattedPlaceholderSql)
     const formattedPlaceholderSql = formatSql(unformattedPlaceholderSql);
+    console.log('--- formattedPlaceholderSql ---');
+    console.log(formattedPlaceholderSql);
+    console.log('--- replacePlaceholders ---')
+    //console.log(placeholders);
+    console.log(replacePlaceholders(formattedPlaceholderSql, placeholders));
+    console.log('--- formatEveryLine ---')
+    console.log(formatEveryLine(
+      replacePlaceholders(formattedPlaceholderSql, placeholders),
+      line => `${indent}${line}`
+    ))
     return formatEveryLine(
       replacePlaceholders(formattedPlaceholderSql, placeholders),
       line => `${indent}${line}`
     );
   });
 
+  console.log('third');
   // Third, format all "inner" SQL blocks, e.g. "pre_operations { ... }".
   const formattedSqlCodeBlocks = innerSqlBlocks.map((sqlCodeBlock): string => {
     // Strip out the declaration of this block, format the internals then add the declaration back.
@@ -232,6 +255,12 @@ function formatPlaceholderInSqlx(
   ) {
     return sqlx.replace(placeholderId, () => formattedPlaceholder.trim());
   }
+
+  // TODO
+  if (placeholderSyntaxNode.type === SyntaxTreeNodeType.SQL_LITERAL_MULTILINE_STRING) {
+    return sqlx.replace(placeholderId, () => formattedPlaceholder.trim());
+  }
+
   // Push multi-line placeholders to their own lines, if they're not already on one.
   const [textBeforePlaceholder, textAfterPlaceholder] = wholeLine.split(placeholderId);
   const newLines: string[] = [];
@@ -253,7 +282,6 @@ function formatSqlQueryPlaceholder(node: SyntaxTreeNode, jsIndent: string): stri
     case SyntaxTreeNodeType.SQL_COMMENT:
       return formatEveryLine(node.concatenate(), line => `${jsIndent}${line.trimLeft()}`);
     case SyntaxTreeNodeType.SQL_LITERAL_MULTILINE_STRING:
-      console.log(node.concatenate());
       return `${jsIndent}${node.concatenate().trimLeft()}`;
     default:
       throw new Error(`Unrecognized SyntaxTreeNodeType: ${node.type}`);

@@ -358,6 +358,7 @@ export function printFormatFilesResult(
     successfulFormatResults.forEach(result => writeStdOut(result.filename, 1));
   }
   if (failedFormatResults.length > 0) {
+    // console.log(failedFormatResults)
     printError("Errors encountered during formatting:");
     failedFormatResults.forEach(result =>
       writeStdOut(`${result.filename}: ${result.err.message}`, 1)

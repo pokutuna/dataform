@@ -133,7 +133,7 @@ SELECT
   line
     string
       with indent""" AS multi_line,
-  REGEXP_CONTAINS("\n  abc\n  ", r'''
+  REGEXP_CONTAINS("\\n  abc\\n  ", r'''
   abc
   ''') AS multi_line_regex,
   """
