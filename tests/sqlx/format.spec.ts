@@ -120,5 +120,26 @@ input "something" {
         .equal(`'^.*(bot|crawl|slurp|spider|archiv|spinn|sniff|seo|audit|survey|pingdom|worm|capture|(browser|screen)shots|analyz|index|thumb|check|facebook|PhantomJS|a_archiver|facebookexternalhit|BingPreview|360User-agent|semalt).*$'
 `);
     });
+
+    test("correctly formats triple_quoted.sqlx", async () => {
+      expect(await formatFile(path.resolve("examples/formatter/definitions/triple_quoted.sqlx")))
+        .equal(`config {
+  type: "operations"
+}
+
+SELECT
+  '''1''' AS single_line,
+  """multi
+  line
+    string
+      with indent""" AS multi_line,
+  REGEXP_CONTAINS("\n  abc\n  ", r'''
+  abc
+  ''') AS multi_line_regex,
+  """
+"inner quote"
+""" AS quote_contains
+`);
+    });
   });
 });
