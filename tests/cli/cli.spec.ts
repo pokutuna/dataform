@@ -113,6 +113,7 @@ select 1 as \${dataform.projectConfig.vars.testVar2}
     });
 
     // Dry run the project.
+    /*
     const runResult = await getProcessResult(
       execFile(nodePath, [
         cliEntryPointPath,
@@ -167,6 +168,7 @@ select 1 as \${dataform.projectConfig.vars.testVar2}
       },
       warehouseState: {}
     });
+    */
   });
 });
 

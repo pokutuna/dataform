@@ -715,18 +715,16 @@ export function runCli() {
         positionalOptions: [projectDirMustExistOption],
         options: [trackOption],
         processFn: async argv => {
-          let warehouse: string | undefined;
+          let projectConfig: Record<string, any>;
           try {
             const dataformJson = fs.readFileSync(path.resolve(argv[projectDirMustExistOption.name], "dataform.json"), 'utf8');
-            const projectConfig = JSON.parse(dataformJson);
-            warehouse = projectConfig.warehouse;
+            projectConfig = JSON.parse(dataformJson);
           } catch (e) {
-            throw new Error(`Could not parse dataform.json: ${e.message}`);
-          }
-          if (!dbadapters.validWarehouses.includes(warehouse)) {
+            throw new Error(`Could not parse dataform.json: ${e.message}`);          }
+          if (!dbadapters.validWarehouses.includes(projectConfig.warehouse)) {
             throw new Error("Unrecognized 'warehouse' setting in dataform.json");
           }
-          const language = warehouseSqlLanguageMap[warehouse as WarehouseType];
+          const warehouse: WarehouseType = projectConfig.warehouse;
 
           const filenames = glob.sync("{definitions,includes}/**/*.{js,sqlx}", {
             cwd: argv[projectDirMustExistOption.name]
@@ -736,7 +734,7 @@ export function runCli() {
               try {
                 await formatFile(path.resolve(argv[projectDirMustExistOption.name], filename), {
                   overwriteFile: true,
-                  language,
+                  warehouse,
                 });
                 return {
                   filename
