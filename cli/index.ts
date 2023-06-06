@@ -36,7 +36,7 @@ import { createYargsCli, INamedOption } from "df/cli/yargswrapper";
 import { supportsCancel, WarehouseType } from "df/core/adapters";
 import { targetAsReadableString } from "df/core/targets";
 import { dataform } from "df/protos/ts";
-import { formatFile, SqlLanguage } from "df/sqlx/format";
+import { formatFile } from "df/sqlx/format";
 import parseDuration from "parse-duration";
 
 const RECOMPILE_DELAY = 500;
@@ -232,15 +232,6 @@ const tableOptionName = "table";
 
 const getCredentialsPath = (projectDir: string, credentialsPath: string) =>
   actuallyResolve(credentialsPath || path.join(projectDir, CREDENTIALS_FILENAME));
-
-const warehouseSqlLanguageMap: Record<WarehouseType, SqlLanguage> = {
-  [WarehouseType.BIGQUERY]:"bigquery",
-  [WarehouseType.PRESTO]: "trino",
-  [WarehouseType.POSTGRES]: "postgresql",
-  [WarehouseType.REDSHIFT]: "redshift",
-  [WarehouseType.SNOWFLAKE]: "snowflake",
-  [WarehouseType.SQLDATAWAREHOUSE]: "transactsql"
-};
 
 export function runCli() {
   const builtYargs = createYargsCli({

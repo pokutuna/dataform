@@ -3,6 +3,7 @@ import * as jsBeautify from "js-beautify";
 import * as sqlFormatter from "sql-formatter";
 import { promisify } from "util";
 
+import { WarehouseType } from "df/core/adapters";
 import { ErrorWithCause } from "df/common/errors/errors";
 import { SyntaxTreeNode, SyntaxTreeNodeType } from "df/sqlx/lexer";
 import { v4 as uuidv4 } from "uuid";
@@ -15,13 +16,22 @@ const JS_BEAUTIFY_OPTIONS: JsBeautifyOptions = {
 
 const MAX_SQL_FORMAT_ATTEMPTS = 5;
 
-export type SqlLanguage = sqlFormatter.SqlLanguage;
+const WAREHOUSE_LANGUAGE_MAP: Record<WarehouseType, sqlFormatter.SqlLanguage> = {
+  [WarehouseType.BIGQUERY]:"bigquery",
+  [WarehouseType.PRESTO]: "trino",
+  [WarehouseType.POSTGRES]: "postgresql",
+  [WarehouseType.REDSHIFT]: "redshift",
+  [WarehouseType.SNOWFLAKE]: "snowflake",
+  [WarehouseType.SQLDATAWAREHOUSE]: "transactsql"
+};
 
-export function format(text: string, fileExtension: string, language: SqlLanguage) {
+const DEFAULT_WAREHOUSE_FOR_FORMATTING: WarehouseType = WarehouseType.BIGQUERY
+
+export function format(text: string, fileExtension: string, warehouse: WarehouseType) {
   try {
     switch (fileExtension) {
       case "sqlx":
-        return postProcessFormattedSqlx(formatSqlx(SyntaxTreeNode.create(text), "", language));
+        return postProcessFormattedSqlx(formatSqlx(SyntaxTreeNode.create(text), "", warehouse));
       case "js":
         return `${formatJavaScript(text).trim()}\n`;
       default:
@@ -36,15 +46,15 @@ export async function formatFile(
   filename: string,
   options?: {
     overwriteFile?: boolean;
-    language?: SqlLanguage;
+    warehouse?: WarehouseType;
   }
 ) {
   const fileExtension = filename.split(".").slice(-1)[0];
   const originalFileContent = await promisify(fs.readFile)(filename, "utf8");
 
-  const language = options?.language || 'bigquery';
-  const formattedText = format(originalFileContent, fileExtension, language);
-  if (formattedText !== format(formattedText, fileExtension, language)) {
+  const warehouse = options?.warehouse || DEFAULT_WAREHOUSE_FOR_FORMATTING;
+  const formattedText = format(originalFileContent, fileExtension, warehouse);
+  if (formattedText !== format(formattedText, fileExtension, warehouse)) {
     throw new Error("Formatter unable to determine final formatted form.");
   }
 
@@ -61,7 +71,8 @@ export async function formatFile(
   return formattedText;
 }
 
-function formatSqlx(node: SyntaxTreeNode, indent: string = "", language: SqlLanguage) {
+function formatSqlx(node: SyntaxTreeNode, indent: string = "", warehouse: WarehouseType) {
+  const language: sqlFormatter.SqlLanguage = WAREHOUSE_LANGUAGE_MAP[warehouse];
   const { sqlxStatements, javascriptBlocks, innerSqlBlocks } = separateSqlxIntoParts(
     node.children()
   );
@@ -105,7 +116,7 @@ function formatSqlx(node: SyntaxTreeNode, indent: string = "", language: SqlLang
           ]);
 
     return `${upToFirstBrace}
-${formatSqlx(sqlCodeBlockWithoutOuterBraces, "  ", language)}
+${formatSqlx(sqlCodeBlockWithoutOuterBraces, "  ", warehouse)}
 ${lastBraceOnwards}`;
   });
 
@@ -205,7 +216,7 @@ function formatJavaScript(text: string) {
   return jsBeautify.js(text, JS_BEAUTIFY_OPTIONS);
 }
 
-function formatSql(text: string, language: SqlLanguage) {
+function formatSql(text: string, language: sqlFormatter.SqlLanguage) {
   let formatted = sqlFormatter.format(text, { language }) as string;
   // Unfortunately sql-formatter does not always produce final formatted output (even on plain SQL) in a single pass.
   for (let attempts = 0; attempts < MAX_SQL_FORMAT_ATTEMPTS; attempts++) {
